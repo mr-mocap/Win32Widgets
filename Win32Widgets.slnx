@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Win32Widgets/Win32Widgets.vcxproj" Id="21b637a7-7c2f-45bc-93aa-e65e265858ac" />`r`n  <Project Path="Win32WidgetsTests/Win32WidgetsTests.vcxproj" Id="3F4D8D62-9E36-4B55-A1D7-5E7F8B2394C1" />
+</Solution>
