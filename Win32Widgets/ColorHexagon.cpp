@@ -2,6 +2,8 @@
 #include <wingdi.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <cmath>
+#include <numbers>
 
 
 #define RETRIEVE_USER_DATA(hwnd) ((InternalColorHexagonState *)GetWindowLongPtr(hwnd, GWLP_USERDATA))
@@ -10,38 +12,31 @@
 // For GradientFill
 #pragma comment(lib, "Msimg32")
 
-#if 0
-static const RGBTRIPLE RedColor   = { 0xFF, 0x00, 0x00 };
-static const RGBTRIPLE GreenColor = { 0x00, 0xFF, 0x00 };
-static const RGBTRIPLE BlueColor  = { 0x00, 0x00, 0xFF };
 
-static const RGBTRIPLE CyanColor    = { 0x00, 0xFF, 0xFF };
-static const RGBTRIPLE MagentaColor = { 0xFF, 0x00, 0xFF };
-static const RGBTRIPLE YellowColor  = { 0xFF, 0xFF, 0x00 };
-
-static const RGBTRIPLE WhiteColor = { 0xFF, 0xFF, 0xFF };
-static const RGBTRIPLE BlackColor = { 0x00, 0x00, 0x00 };
-#endif
+static const float SQRT3_OVER_2 = 1.7320508075688772f / 2.0f;
+static const float TWO_PI       = 2.0f * std::numbers::pi_v<float>;
 
 struct InternalColorHexagonState
 {
-    RGBTRIPLE color = { 0xFF, 0xFF, 0xFF }; // Default to white
-
-    TRIVERTEX vertex[7] = {};
-
     static const GRADIENT_TRIANGLE glTriangle[6];
+
+    UNITHSVTRIPLE color = { .hue = 0.0f, .saturation = 0.0f, .value = 1.0f }; // Default to white
+    TRIVERTEX     vertex[7] = { };
+    LONG          hexagonHalfWidth  = 0;
+    LONG          hexagonHalfHeight = 0;
+    LONG          centerX = 0;
+    LONG          centerY = 0;
 
     void setSize(int width, int height)
     {
-        const float sqrt3_over_2 = 1.7320508075688772f / 2.0f;
         LONG height_2 = height / 2;
         LONG width_2 = width / 2;
         LONG tri_width = width_2;
         LONG tri_width_2 = tri_width / 2;
-        LONG tri_height = (LONG)(sqrt3_over_2 * tri_width);
+        LONG tri_height = (LONG)(SQRT3_OVER_2 * tri_width);
 
         tri_height = min(tri_height, height_2);
-        tri_width = (LONG)(tri_height / sqrt3_over_2);
+        tri_width = (LONG)(tri_height / SQRT3_OVER_2);
         tri_width_2 = tri_width / 2;
 
         // Center it!
@@ -52,6 +47,11 @@ struct InternalColorHexagonState
         vertex[4] = { .x = width_2 - tri_width_2, .y = height_2 + tri_height, .Red = 0x0000, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
         vertex[5] = { .x = width_2 + tri_width_2, .y = height_2 + tri_height, .Red = 0xFFFF, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
         vertex[6] = { .x = width_2,               .y = height_2,              .Red = 0xFFFF, .Green = 0xFFFF, .Blue = 0xFFFF, .Alpha = 0x0000 };
+
+        hexagonHalfWidth  = tri_width;
+        hexagonHalfHeight = tri_height;
+        centerX = width_2;
+        centerY = height_2;
     }
 
     PTRIVERTEX vertexData() const
@@ -63,7 +63,6 @@ struct InternalColorHexagonState
     {
         return (PVOID)glTriangle;
     }
-
 };
 
 const GRADIENT_TRIANGLE InternalColorHexagonState::glTriangle[6] = {
@@ -97,6 +96,23 @@ static void OnSize(HWND hwnd, UINT state, int width, int height)
         pState->setSize(width, height);
         InvalidateRect(hwnd, nullptr, TRUE); // We don't draw here.  We just change the size and then invalidate the window to force a repaint.
     }
+}
+
+static void DrawColorIndicator(HDC hdc, InternalColorHexagonState *pState)
+{
+    const LONG radius = 5; // Radius of the indicator circle
+
+    LONG distanceFromCenter = (LONG)(pState->color.saturation * pState->hexagonHalfWidth);
+    LONG indicatorX = pState->centerX + (int)(distanceFromCenter * std::cos(pState->color.hue * TWO_PI));
+    LONG indicatorY = pState->centerY - (int)(distanceFromCenter * std::sin(pState->color.hue * TWO_PI));
+    HGDIOBJ oldBrush = SelectObject(hdc, GetStockObject(WHITE_BRUSH));
+
+    Ellipse(hdc,
+            indicatorX - radius,
+            indicatorY - radius,
+            indicatorX + radius,
+            indicatorY + radius);
+    SelectObject(hdc, oldBrush);
 }
 
 static LRESULT CALLBACK ColorHexagonWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -160,29 +176,34 @@ static LRESULT CALLBACK ColorHexagonWndProc(HWND hWnd, UINT message, WPARAM wPar
             {
                 // Use the state to draw the hexagon
                 GradientFill(hdc, pState->vertexData(), 7, pState->triangleData(), 6, GRADIENT_FILL_TRIANGLE);
+
+                // Draw the color indicator based on the current HSV color
+                DrawColorIndicator(hdc, pState);
             }
             EndPaint(hWnd, &ps);
         }
         break;
     case CHM_SETCOLOR:
-    {
-        InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
-
-        if ( pState )
         {
-            pState->color = *(PRGBTRIPLE)lParam;
-            InvalidateRect(hWnd, nullptr, TRUE); // Force a repaint with the new color
+            InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
+
+            if ( pState )
+            {
+                pState->color = *(PUNITHSVTRIPLE)lParam;
+                InvalidateRect(hWnd, nullptr, TRUE); // Force a repaint with the new color
+            }
         }
-    }
+        break;
     case CHM_GETCOLOR:
-    {
-        InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
-
-        if ( pState )
         {
-            *(PRGBTRIPLE)lParam = pState->color;
+            InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
+
+            if ( pState )
+            {
+                *(PUNITHSVTRIPLE)lParam = pState->color;
+            }
         }
-    }
+        break;
     case WM_DESTROY:
         {
             _TCHAR buffer[64];
@@ -207,15 +228,17 @@ static LRESULT CALLBACK ColorHexagonWndProc(HWND hWnd, UINT message, WPARAM wPar
     return 0;
 }
 
+extern "C" {
+
 ATOM ColorHexagonRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex = {};
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style       = CS_HREDRAW | CS_VREDRAW;
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc = ColorHexagonWndProc;
-    wcex.hInstance   = hInstance;
+    wcex.hInstance = hInstance;
     wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW);
     wcex.lpszClassName = ColorHexagonClassName;
 
@@ -227,15 +250,17 @@ BOOL ColorHexagonUnregisterClass(HINSTANCE hInstance)
     return UnregisterClass(ColorHexagonClassName, hInstance);
 }
 
-void ColorHexagonSetColor(HWND hwnd, RGBTRIPLE color)
+void ColorHexagonSetColor(HWND hwnd, UNITHSVTRIPLE color)
 {
     SendMessage(hwnd, CHM_SETCOLOR, 0, (LPARAM)&color);
 }
 
-RGBTRIPLE ColorHexagonGetColor(HWND hwnd)
+UNITHSVTRIPLE ColorHexagonGetColor(HWND hwnd)
 {
-    RGBTRIPLE color;
+    UNITHSVTRIPLE color;
 
     SendMessage(hwnd, CHM_GETCOLOR, 0, (LPARAM)&color);
     return color;
+}
+
 }
