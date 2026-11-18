@@ -68,3 +68,6 @@ Testing/
 .cache/
 
 .vs/
+
+# Build Outputs
+x64/
