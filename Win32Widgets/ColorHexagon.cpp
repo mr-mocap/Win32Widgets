@@ -185,12 +185,29 @@ static LRESULT CALLBACK ColorHexagonWndProc(HWND hWnd, UINT message, WPARAM wPar
         break;
     case CHM_SETCOLOR:
         {
-            InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
+            PUNITHSVTRIPLE pColor = (PUNITHSVTRIPLE)lParam;
 
-            if ( pState )
             {
-                pState->color = *(PUNITHSVTRIPLE)lParam;
-                InvalidateRect(hWnd, nullptr, TRUE); // Force a repaint with the new color
+                _TCHAR buffer[64];
+
+                _sntprintf_s(buffer,
+                             _countof(buffer),
+                             _TRUNCATE,
+                             _TEXT("%s: CHM_SETCOLOR { Hue: %f, Saturation: %f, Value: %f }\n"),
+                             ColorHexagonClassName,
+                             pColor->hue,
+                             pColor->saturation,
+                             pColor->value);
+                OutputDebugString(buffer);
+            }
+            {
+                InternalColorHexagonState *pState = RETRIEVE_USER_DATA(hWnd);
+
+                if ( pState )
+                {
+                    pState->color = *pColor;
+                    InvalidateRect(hWnd, nullptr, TRUE); // Force a repaint with the new color
+                }
             }
         }
         break;
@@ -201,6 +218,20 @@ static LRESULT CALLBACK ColorHexagonWndProc(HWND hWnd, UINT message, WPARAM wPar
             if ( pState )
             {
                 *(PUNITHSVTRIPLE)lParam = pState->color;
+
+                {
+                    _TCHAR buffer[64];
+
+                    _sntprintf_s(buffer,
+                                 _countof(buffer),
+                                 _TRUNCATE,
+                                 _TEXT("%s: CHM_GETCOLOR { Hue: %f, Saturation: %f, Value: %f }\n"),
+                                 ColorHexagonClassName,
+                                 pState->color.hue,
+                                 pState->color.saturation,
+                                 pState->color.value);
+                    OutputDebugString(buffer);
+                }
             }
         }
         break;
