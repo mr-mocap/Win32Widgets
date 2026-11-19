@@ -22,10 +22,10 @@ struct InternalColorHexagonState
 
     UNITHSVTRIPLE color = { .hue = 0.0f, .saturation = 0.0f, .value = 1.0f }; // Default to white
     TRIVERTEX     vertex[7] = { };
-    LONG          hexagonHalfWidth  = 0;
-    LONG          hexagonHalfHeight = 0;
-    LONG          centerX = 0;
-    LONG          centerY = 0;
+    POINT         center = { 0, 0 };
+    POINT         red_translation_vector;
+    POINT         green_translation_vector;
+    POINT         blue_translation_vector;
 
     void setSize(int width, int height)
     {
@@ -39,19 +39,37 @@ struct InternalColorHexagonState
         tri_width = (LONG)(tri_height / SQRT3_OVER_2);
         tri_width_2 = tri_width / 2;
 
-        // Center it!
-        vertex[0] = { .x = width_2 + tri_width,   .y = height_2,              .Red = 0xFFFF, .Green = 0x0000, .Blue = 0x0000, .Alpha = 0x0000 };
-        vertex[1] = { .x = width_2 + tri_width_2, .y = height_2 - tri_height, .Red = 0xFFFF, .Green = 0xFFFF, .Blue = 0x0000, .Alpha = 0x0000 };
-        vertex[2] = { .x = width_2 - tri_width_2, .y = height_2 - tri_height, .Red = 0x0000, .Green = 0xFFFF, .Blue = 0x0000, .Alpha = 0x0000 };
-        vertex[3] = { .x = width_2 - tri_width,   .y = height_2,              .Red = 0x0000, .Green = 0xFFFF, .Blue = 0xFFFF, .Alpha = 0x0000 };
-        vertex[4] = { .x = width_2 - tri_width_2, .y = height_2 + tri_height, .Red = 0x0000, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
-        vertex[5] = { .x = width_2 + tri_width_2, .y = height_2 + tri_height, .Red = 0xFFFF, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
-        vertex[6] = { .x = width_2,               .y = height_2,              .Red = 0xFFFF, .Green = 0xFFFF, .Blue = 0xFFFF, .Alpha = 0x0000 };
+        red_translation_vector.x = tri_width;
+        red_translation_vector.y = 0;
 
-        hexagonHalfWidth  = tri_width;
-        hexagonHalfHeight = tri_height;
-        centerX = width_2;
-        centerY = height_2;
+        green_translation_vector.x = -tri_width_2;
+        green_translation_vector.y = -tri_height;
+
+        blue_translation_vector.x = -tri_width_2;
+        blue_translation_vector.y =  tri_height;
+
+        center.x = width_2;
+        center.y = height_2;
+
+        // Center it!
+
+        // Red
+        vertex[0] = { .x = center.x + tri_width,   .y = center.y,              .Red = 0xFFFF, .Green = 0x0000, .Blue = 0x0000, .Alpha = 0x0000 };
+
+        vertex[1] = { .x = center.x + tri_width_2, .y = center.y - tri_height, .Red = 0xFFFF, .Green = 0xFFFF, .Blue = 0x0000, .Alpha = 0x0000 };
+
+        // Green
+        vertex[2] = { .x = center.x - tri_width_2, .y = center.y - tri_height, .Red = 0x0000, .Green = 0xFFFF, .Blue = 0x0000, .Alpha = 0x0000 };
+
+        vertex[3] = { .x = center.x - tri_width,   .y = center.y,              .Red = 0x0000, .Green = 0xFFFF, .Blue = 0xFFFF, .Alpha = 0x0000 };
+
+        // Blue
+        vertex[4] = { .x = center.x - tri_width_2, .y = center.y + tri_height, .Red = 0x0000, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
+
+        vertex[5] = { .x = center.x + tri_width_2, .y = center.y + tri_height, .Red = 0xFFFF, .Green = 0x0000, .Blue = 0xFFFF, .Alpha = 0x0000 };
+
+        // Center (White)
+        vertex[6] = { .x = center.x,               .y = center.y,              .Red = 0xFFFF, .Green = 0xFFFF, .Blue = 0xFFFF, .Alpha = 0x0000 };
     }
 
     PTRIVERTEX vertexData() const
@@ -102,16 +120,25 @@ static void DrawColorIndicator(HDC hdc, InternalColorHexagonState *pState)
 {
     const LONG radius = 5; // Radius of the indicator circle
 
-    LONG distanceFromCenter = (LONG)(pState->color.saturation * pState->hexagonHalfWidth);
-    LONG indicatorX = pState->centerX + (int)(distanceFromCenter * std::cos(pState->color.hue * TWO_PI));
-    LONG indicatorY = pState->centerY - (int)(distanceFromCenter * std::sin(pState->color.hue * TWO_PI));
+    UNITRGBTRIPLE rgb_value = UnitHSVTripleToUnitRGBTriple(pState->color);
+    POINT         scaled_red_vector = { .x = (LONG)std::round(pState->red_translation_vector.x * rgb_value.red),
+                                        .y = (LONG)std::round(pState->red_translation_vector.y * rgb_value.red) };
+    POINT         scaled_green_vector = { .x = (LONG)std::roundf(pState->green_translation_vector.x * rgb_value.green),
+                                          .y = (LONG)std::round(pState->green_translation_vector.y * rgb_value.green) };
+    POINT         scaled_blue_vector = { .x = (LONG)std::round(pState->blue_translation_vector.x * rgb_value.blue),
+                                         .y = (LONG)std::round(pState->blue_translation_vector.y * rgb_value.blue) };
+    POINT         indicator_location = { .x = scaled_red_vector.x + scaled_green_vector.x + scaled_blue_vector.x,
+                                         .y = scaled_red_vector.y + scaled_green_vector.y + scaled_blue_vector.y };
+    POINT         indicator_from_center = { .x = pState->center.x + indicator_location.x,
+                                            .y = pState->center.y + indicator_location.y };
+
     HGDIOBJ oldBrush = SelectObject(hdc, GetStockObject(WHITE_BRUSH));
 
     Ellipse(hdc,
-            indicatorX - radius,
-            indicatorY - radius,
-            indicatorX + radius,
-            indicatorY + radius);
+            indicator_from_center.x - radius,
+            indicator_from_center.y - radius,
+            indicator_from_center.x + radius,
+            indicator_from_center.y + radius);
     SelectObject(hdc, oldBrush);
 }
 
