@@ -46,6 +46,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
+    ColorHexagonSetColor( hColorHexagonWnd, UnitRGBTripleToUnitHSVTriple( { .red = 1.0f, .green = 1.0f, .blue = 0.0f } ));
+
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
     {
