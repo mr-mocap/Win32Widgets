@@ -1,6 +1,5 @@
 #pragma once
 
-#include <windows.h>
 #include "Color.h"
 
 #define CHM_SETCOLOR (WM_USER + 1)
