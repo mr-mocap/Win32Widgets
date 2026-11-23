@@ -151,7 +151,9 @@
     <ClInclude Include="Win32Widgets.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Color.cpp" />
+    <ClCompile Include="Color.c">
+      <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdc17</LanguageStandard_C>
+    </ClCompile>
     <ClCompile Include="ColorHexagon.cpp" />
     <ClCompile Include="Win32Widgets.cpp" />
   </ItemGroup>

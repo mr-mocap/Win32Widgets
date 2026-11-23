@@ -1,5 +1,5 @@
 #include "Color.h"
-#include <cmath>
+#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -8,29 +8,49 @@ extern "C" {
 
 RGBTRIPLE ConstructRGBTripleFromBytes(BYTE red, BYTE green, BYTE blue)
 {
-    return { .rgbtBlue = blue, .rgbtGreen = green, .rgbtRed = red };
+    RGBTRIPLE rgb;
+
+    rgb.rgbtBlue = blue;
+    rgb.rgbtGreen = green;
+    rgb.rgbtRed = red;
+
+    return rgb;
 }
 
 UNITRGBTRIPLE ConstructUnitRGBTripleFromFloats(float red, float green, float blue)
 {
-    return {
-        .red   = max(0.0f, min(1.0f, red)),
-        .green = max(0.0f, min(1.0f, green)),
-        .blue  = max(0.0f, min(1.0f, blue))
-    };
+    UNITRGBTRIPLE unitrgb;
+
+    unitrgb.blue  = max(0.0f, min(1.0f, blue));
+    unitrgb.green = max(0.0f, min(1.0f, green));
+    unitrgb.red   = max(0.0f, min(1.0f, red));
+
+    return unitrgb;
 }
 
 UNITRGBTRIPLE RGBTripleToUnitRGBTriple(RGBTRIPLE rgb)
 {
     // Convert RGB values from 0-255 range to 0.0-1.0 range
 
-    return { .red = rgb.rgbtRed / 255.0f, .green = rgb.rgbtGreen / 255.0f, .blue = rgb.rgbtBlue / 255.0f };
+    UNITRGBTRIPLE unitrgb;
+
+    unitrgb.red   = rgb.rgbtRed / 255.0f;
+    unitrgb.green = rgb.rgbtGreen / 255.0f;
+    unitrgb.blue  = rgb.rgbtBlue / 255.0f;
+
+    return unitrgb;
 }
 
 RGBTRIPLE UnitRGBTripleToRGBTriple(UNITRGBTRIPLE rgb)
 {
     // Convert RGB values from 0.0-1.0 range to 0-255 range
-    return { .rgbtBlue = (BYTE)(rgb.blue * 255.0f), .rgbtGreen = (BYTE)(rgb.green * 255.0f), .rgbtRed = (BYTE)(rgb.red * 255.0f) };
+    RGBTRIPLE retval;
+
+    retval.rgbtBlue  = (BYTE)(rgb.blue * 255.0f);
+    retval.rgbtGreen = (BYTE)(rgb.green * 255.0f);
+    retval.rgbtRed   = (BYTE)(rgb.red * 255.0f);
+
+    return retval;
 }
 
 UNITRGBTRIPLE UnitHSVTripleToUnitRGBTriple(UNITHSVTRIPLE hsv_color)
@@ -105,22 +125,28 @@ UNITHSVTRIPLE UnitRGBTripleToUnitHSVTriple(UNITRGBTRIPLE rgb_color)
         h /= 6.0f;
     }
 
-    return { .hue = h, .saturation = s, .value = v };
+    UNITHSVTRIPLE hsv_color;
+
+    hsv_color.hue        = h;
+    hsv_color.saturation = s;
+    hsv_color.value      = v;
+
+    return hsv_color;
 }
 
-bool IsNormalized(float value)
+BOOL IsNormalized(float value)
 {
     return (value >= 0.0f && value <= 1.0f);
 }
 
-bool IsValidUnitRGBTriple(UNITRGBTRIPLE rgb)
+BOOL IsValidUnitRGBTriple(UNITRGBTRIPLE rgb)
 {
     return IsNormalized(rgb.red)   &&
            IsNormalized(rgb.green) &&
            IsNormalized(rgb.blue);
 }
 
-bool IsValidUnitHSVTriple(UNITHSVTRIPLE hsv)
+BOOL IsValidUnitHSVTriple(UNITHSVTRIPLE hsv)
 {
     return IsNormalized(hsv.hue)        &&
            IsNormalized(hsv.saturation) &&

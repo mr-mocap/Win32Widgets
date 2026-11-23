@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <wingdi.h>
+#include <windef.h>
 
 /** @file
  *
@@ -81,7 +82,7 @@ UNITHSVTRIPLE UnitRGBTripleToUnitHSVTriple(UNITRGBTRIPLE rgb_color);
  * 
  *  @note A normalized value is one that falls within the inclusive range of 0.0 to 1.0.
  */
-bool IsNormalized(float value);
+BOOL IsNormalized(float value);
 
 /** Checks whether a UNITRGBTRIPLE contains valid unit values.
  * 
@@ -91,7 +92,7 @@ bool IsNormalized(float value);
  * 
  *  @note A normalized value is one that falls within the inclusive range of 0.0 to 1.0.
  */
-bool IsValidUnitRGBTriple(UNITRGBTRIPLE rgb);
+BOOL IsValidUnitRGBTriple(UNITRGBTRIPLE rgb);
 
 /** Checks whether a UNITHSVTRIPLE contains valid unit values.
  * 
@@ -101,7 +102,7 @@ bool IsValidUnitRGBTriple(UNITRGBTRIPLE rgb);
  * 
  *  @note A normalized value is one that falls within the inclusive range of 0.0 to 1.0.
  */
-bool IsValidUnitHSVTriple(UNITHSVTRIPLE hsv);
+BOOL IsValidUnitHSVTriple(UNITHSVTRIPLE hsv);
 /// @}
 
 #ifdef __cplusplus

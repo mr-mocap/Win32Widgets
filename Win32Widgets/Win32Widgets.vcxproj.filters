@@ -41,7 +41,7 @@
     <ClCompile Include="ColorHexagon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Color.cpp">
+    <ClCompile Include="Color.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
